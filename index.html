@@ -2,72 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub VM Runner</title>
+    <title>Custom x64 WebAssembly Engine</title>
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            overflow: hidden;
-            font-family: sans-serif;
-            color: #fff;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: #000; overflow: hidden; display: flex;
+            justify-content: center; align-items: center;
         }
-        #screen_container {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-        }
+        canvas { width: 100%; height: 100%; image-rendering: pixelated; }
     </style>
 </head>
 <body>
 
-    <div id="loading">
-        <h2>Loading Virtual Machine from GitHub...</h2>
-        <p>Please wait while assets stream via WebAssembly</p>
-    </div>
+    <!-- Canvas where your custom x64 emulator renders video memory -->
+    <canvas id="x64-screen"></canvas>
 
-    <div id="screen_container">
-        <!-- v86 screen canvas will be rendered here automatically -->
-    </div>
-
-    <!-- Load stable v86 engine script -->
-    <script src="https://cdn.jsdelivr.net/npm/v86@0.5.44/build/libv86.js"></script>
+    <!-- Load your compiled custom Wasm glue script -->
+    <script src="build/emu.js"></script>
     <script>
-        window.onload = function() {
-            // Read disk URL parameter passed from the PenguinMod extension iframe source
-            const urlParams = new URLSearchParams(window.location.search);
-            const diskUrl = urlParams.get('disk') || "https://cdn.jsdelivr.net/gh/copy/v86@master/images/alpineos.iso";
+        // Read custom x64 image or ISO URL passed from PenguinMod extension
+        const urlParams = new URLSearchParams(window.location.search);
+        const diskUrl = urlParams.get('disk') || "";
 
-            console.log("Booting VM with disk source:", diskUrl);
-
-            var emulator = new V86Starter({
-                wasm_path: "https://cdn.jsdelivr.net/npm/v86@0.5.44/build/v86.wasm",
-                memory_size: 128 * 1024 * 1024,      // Optimized client-side memory allocation
-                vga_memory_size: 8 * 1024 * 1024,
-                screen_container: document.getElementById("screen_container"),
-                bios: { url: "https://cdn.jsdelivr.net/npm/v86@0.5.44/bios/seabios.bin" },
-                vga_bios: { url: "https://cdn.jsdelivr.net/npm/v86@0.5.44/bios/vgabios.bin" },
-                cdrom: { url: diskUrl },             // Mounts your GitHub raw file link directly as CD-ROM
-                autostart: true,
-                audio: true
-            });
-
-            emulator.add_listener("screen-set-mode", function() {
-                // Hide loading screen once the emulator boots its display buffer
-                document.getElementById("loading").style.display = "none";
-            });
+        // Initialize your custom WebAssembly module compiled from scratch
+        Module.onRuntimeInitialized = function() {
+            console.log("[Custom x64 Wasm] Engine loaded successfully from GitHub!");
+            
+            // Allocate memory and initialize your custom CPU registers
+            const canvas = document.getElementById('x64-screen');
+            const ctx = canvas.getContext('2d');
+            
+            // Example hook into your compiled C/Wasm start function
+            if (Module._init_x64_emulator) {
+                Module._init_x64_emulator(512 * 1024 * 1024); // Pass 512MB RAM allocation
+            }
         };
     </script>
 </body>
