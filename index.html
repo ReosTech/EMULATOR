@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub VM Runner</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+            font-family: sans-serif;
+            color: #fff;
+        }
+        #screen_container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <h2>Loading Virtual Machine from GitHub...</h2>
+        <p>Please wait while assets stream via WebAssembly</p>
+    </div>
+
+    <div id="screen_container">
+        <!-- v86 screen canvas will be rendered here automatically -->
+    </div>
+
+    <!-- Load stable v86 engine script -->
+    <script src="https://cdn.jsdelivr.net/npm/v86@0.5.44/build/libv86.js"></script>
+    <script>
+        window.onload = function() {
+            // Read disk URL parameter passed from the PenguinMod extension iframe source
+            const urlParams = new URLSearchParams(window.location.search);
+            const diskUrl = urlParams.get('disk') || "https://cdn.jsdelivr.net/gh/copy/v86@master/images/alpineos.iso";
+
+            console.log("Booting VM with disk source:", diskUrl);
+
+            var emulator = new V86Starter({
+                wasm_path: "https://cdn.jsdelivr.net/npm/v86@0.5.44/build/v86.wasm",
+                memory_size: 128 * 1024 * 1024,      // Optimized client-side memory allocation
+                vga_memory_size: 8 * 1024 * 1024,
+                screen_container: document.getElementById("screen_container"),
+                bios: { url: "https://cdn.jsdelivr.net/npm/v86@0.5.44/bios/seabios.bin" },
+                vga_bios: { url: "https://cdn.jsdelivr.net/npm/v86@0.5.44/bios/vgabios.bin" },
+                cdrom: { url: diskUrl },             // Mounts your GitHub raw file link directly as CD-ROM
+                autostart: true,
+                audio: true
+            });
+
+            emulator.add_listener("screen-set-mode", function() {
+                // Hide loading screen once the emulator boots its display buffer
+                document.getElementById("loading").style.display = "none";
+            });
+        };
+    </script>
+</body>
+</html>
